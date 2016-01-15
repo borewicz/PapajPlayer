@@ -9,6 +9,11 @@ import java.util.Random;
 import put.ai.games.game.Board;
 import put.ai.games.game.Move;
 import put.ai.games.game.Player;
+import put.ai.games.game.moves.*;
+import put.ai.games.game.moves.ShiftMove.Direction;
+import put.ai.games.game.moves.impl.MoveMoveImpl;
+import put.ai.games.game.moves.impl.ShiftMoveImpl;
+
 
 public class PapajPlayer extends Player {
 
@@ -21,7 +26,22 @@ public class PapajPlayer extends Player {
 
     @Override
     public Move nextMove(Board b) {
-        List<Move> moves = b.getMovesFor(getColor());
-        return moves.get(random.nextInt(moves.size()));
+        List<Move> moves = b.getMovesFor(getColor());         
+        
+        return moves.get(0);
+    }
+    
+    private Integer getScore(Board b){
+        Integer result=0;
+        for (int i=0;i<b.getSize();i++)
+            for (int j=0;j<b.getSize();j++){
+                if (b.getState(i, j)==getOpponent(getColor())){
+                    result--;
+                }
+                if (b.getState(i, j)==getColor()){
+                    result++;
+                }
+            }
+        return result;
     }
 }
