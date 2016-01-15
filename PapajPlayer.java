@@ -16,7 +16,7 @@ public class PapajPlayer extends Player {
 
     @Override
     public String getName() {
-        return "JP2gmd";
+        return "Sebastian Pawlak 117269 Piotr Kurzawa 117245";
     }
 
     @Override
