@@ -5,7 +5,7 @@
 package put.ai.games.papajplayer;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,10 +13,7 @@ import java.util.Random;
 import put.ai.games.game.Board;
 import put.ai.games.game.Move;
 import put.ai.games.game.Player;
-import put.ai.games.game.moves.*;
-import put.ai.games.game.moves.ShiftMove.Direction;
-import put.ai.games.game.moves.impl.MoveMoveImpl;
-import put.ai.games.game.moves.impl.ShiftMoveImpl;
+
 
 public class PapajPlayer extends Player {
 
@@ -29,8 +26,7 @@ public class PapajPlayer extends Player {
 
     @Override
     public Move nextMove(Board b) {
-        long startTime = System.currentTimeMillis();
-        System.out.println(startTime);
+        long startTime = System.currentTimeMillis();        
         Board c = b.clone();
         LinkedList<TreeNode> nextNodes = new LinkedList<>();
         TreeNode tree = new TreeNode(new Node(c, true, null));
@@ -42,7 +38,7 @@ public class PapajPlayer extends Player {
         Integer max = -1000;
 
         Move bestMove = ((Node) nextNodes.get(0).getUserObject()).board.getMovesFor(getColor()).get(0);        
-        while (!nextNodes.isEmpty() && ((System.currentTimeMillis() - startTime)<8000)) { //(getTime() - startTime) < 200)
+        while (!nextNodes.isEmpty() && ((System.currentTimeMillis() - startTime)<4000)) { //(getTime() - startTime) < 200)
 //            System.out.println(getTime() - startTime);            
             if (((Node) nextNodes.getFirst().getUserObject()).player) {                
                 //--------------------------------------- player move --------------------------------------------
@@ -83,17 +79,14 @@ public class PapajPlayer extends Player {
             } else {
                 nodes.add(new Node(boardTemp, isPlayer, ((Node) nextNodes.getFirst().getUserObject()).rootMove));
             }
-        }        
-        for (Node x : nodes) {
-            System.out.println(x.score);
-        }
-        nodes.sort(comp);
+        }       
+        Collections.sort(nodes,comp);
+//        nodes.sort(comp);
         int first = nodes.get(0).score;        
         for (Node x : nodes) {
             if (x.score != first) {
                 break;
-            }
-            System.out.println(x.score);
+            }            
             nextNodes.getFirst().addChildren(x);
             nextNodes.addLast(new TreeNode(x, nextNodes.getFirst()));
         }
