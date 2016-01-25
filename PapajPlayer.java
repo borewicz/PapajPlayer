@@ -5,6 +5,9 @@
 package put.ai.games.papajplayer;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import put.ai.games.game.Board;
@@ -26,11 +29,75 @@ public class PapajPlayer extends Player {
 
     @Override
     public Move nextMove(Board b) {
-        List<Move> moves = b.getMovesFor(getColor());
+        long startTime = System.currentTimeMillis();
+        System.out.println(startTime);
         Board c = b.clone();
-        TreeNode tree = new TreeNode(new Node(c));
+        LinkedList<TreeNode> nextNodes = new LinkedList<>();
+        TreeNode tree = new TreeNode(new Node(c, true, null));
+        nextNodes.addLast(tree);
+        return getBestMove(nextNodes, startTime);
+    }
 
-        return moves.get(0);
+    private Move getBestMove(LinkedList<TreeNode> nextNodes, long startTime) {
+        Integer max = -1000;
+
+        Move bestMove = ((Node) nextNodes.get(0).getUserObject()).board.getMovesFor(getColor()).get(0);        
+        while (!nextNodes.isEmpty() && ((System.currentTimeMillis() - startTime)<8000)) { //(getTime() - startTime) < 200)
+//            System.out.println(getTime() - startTime);            
+            if (((Node) nextNodes.getFirst().getUserObject()).player) {                
+                //--------------------------------------- player move --------------------------------------------
+                if ((((Node) nextNodes.getFirst().getUserObject()).score > max)
+                        && (((Node) nextNodes.getFirst().getUserObject()).rootMove != null)) {
+                    bestMove = ((Node) nextNodes.getFirst().getUserObject()).rootMove;
+                    max = ((Node) nextNodes.getFirst().getUserObject()).score;
+                }
+
+                nextChild(nextNodes, getColor(),false,  new Comparator<Node>() {
+                    @Override
+                    public int compare(Node node2, Node node1) {
+                        return node1.score.compareTo(node2.score);
+                    }
+                });
+            } else {                
+                //--------------------------------------- enemy move --------------------------------------------
+                nextChild(nextNodes, getOpponent(getColor()),true , new Comparator<Node>() {
+                    @Override
+                    public int compare(Node node1, Node node2) {
+                        return node1.score.compareTo(node2.score);
+                    }
+                });
+            }
+        }
+
+        return bestMove;
+    }
+
+    private void nextChild(LinkedList<TreeNode> nextNodes, Color color, Boolean isPlayer, Comparator comp ) {
+        List<Move> moves = ((Node) nextNodes.getFirst().getUserObject()).board.getMovesFor(color);
+        ArrayList<Node> nodes = new ArrayList<>();
+        for (int i = 0; i < moves.size(); i++) {
+            Board boardTemp = ((Node) nextNodes.getFirst().getUserObject()).board.clone();
+            boardTemp.doMove(moves.get(i));
+            if (((Node) nextNodes.getFirst().getUserObject()).rootMove == null) {
+                nodes.add(new Node(boardTemp, isPlayer, moves.get(i)));
+            } else {
+                nodes.add(new Node(boardTemp, isPlayer, ((Node) nextNodes.getFirst().getUserObject()).rootMove));
+            }
+        }        
+        for (Node x : nodes) {
+            System.out.println(x.score);
+        }
+        nodes.sort(comp);
+        int first = nodes.get(0).score;        
+        for (Node x : nodes) {
+            if (x.score != first) {
+                break;
+            }
+            System.out.println(x.score);
+            nextNodes.getFirst().addChildren(x);
+            nextNodes.addLast(new TreeNode(x, nextNodes.getFirst()));
+        }
+        nextNodes.removeFirst();
     }
 
     private Integer calculateScore(Board b) {
@@ -52,13 +119,17 @@ public class PapajPlayer extends Player {
 
         private Board board;
         private Integer score;
+        private Boolean player;
+        private Move rootMove;
 
         private Node() {
         }
 
-        public Node(Board b) {
+        public Node(Board b, Boolean player, Move rootMove) {
             board = b;
             score = calculateScore(b);
+            this.player = player;
+            this.rootMove = rootMove;
         }
 
         @Override
@@ -79,16 +150,16 @@ public class PapajPlayer extends Player {
 
         private TreeNode parent;
         private ArrayList<TreeNode> children = new ArrayList<>();
-        private Object m_userData;
+        private Node m_userData;
 
         public TreeNode() {
         }
 
-        public TreeNode(Object userObject) {
+        public TreeNode(Node userObject) {
             m_userData = userObject;
         }
 
-        public TreeNode(Object userObject, TreeNode parent) {
+        public TreeNode(Node userObject, TreeNode parent) {
             m_userData = userObject;
             this.parent = parent;
         }
@@ -130,7 +201,7 @@ public class PapajPlayer extends Player {
             }
         }
 
-        public void setUserObject(Object userObject) {
+        public void setUserObject(Node userObject) {
             m_userData = userObject;
         }
 
@@ -138,8 +209,12 @@ public class PapajPlayer extends Player {
             return m_userData;
         }
 
-        public void addChildren(Object userObject) {
-            children.add(new TreeNode(userObject,this));            
+        public void addChildren(TreeNode node) {
+            children.add(node);
+        }
+
+        public void addChildren(Node userObject) {
+            children.add(new TreeNode(userObject, this));
         }
     }
 }
