@@ -4,6 +4,7 @@
  */
 package put.ai.games.papajplayer;
 
+import static java.lang.Math.abs;
 import java.util.List;
 import put.ai.games.game.Board;
 import put.ai.games.game.Move;
@@ -18,13 +19,10 @@ public class PapajPlayer extends Player {
 
     @Override
     public Move nextMove(Board b) {
-        long startTime = System.currentTimeMillis();
         Board c = b.clone();
-        System.out.println(b.getState(0, 0));
-        System.out.println(getColor());
-        Node node = new Node(c, null, getColor());
-        Node resultNode = minMax(node, 4);
-        System.out.println(System.currentTimeMillis() - startTime);
+        int depth = 4;
+        Node node = new Node(c, null, depth);
+        Node resultNode = minMax(node, depth);
         return resultNode.getRootMove();
     }
 
@@ -34,6 +32,9 @@ public class PapajPlayer extends Player {
 
     private Node alphaBeta(Node node, int depth, int alpha, int beta, Boolean maximizingPlayer) {
         if (depth == 0) {
+            return node;
+        }
+        if (abs(node.getScore()) >= 50) {
             return node;
         }
         if (maximizingPlayer) {
@@ -49,7 +50,7 @@ public class PapajPlayer extends Player {
                 if (rootMove == null) {
                     rootMove = move;
                 }
-                maxNode = maxNode(maxNode, alphaBeta(new Node(c, rootMove, getOpponent(getColor())), depth - 1, alpha, beta, false));
+                maxNode = maxNode(maxNode, alphaBeta(new Node(c, rootMove, depth - 1), depth - 1, alpha, beta, false));
                 alpha = maxInt(alpha, maxNode.getScore());
                 if (beta <= alpha) {
                     break;
@@ -57,7 +58,7 @@ public class PapajPlayer extends Player {
             }
             return maxNode;
         } else {
-            List<Move> moves = node.getBoard().getMovesFor(getColor());
+            List<Move> moves = node.getBoard().getMovesFor(getOpponent(getColor()));
             if (moves.isEmpty()) {
                 return node;
             }
@@ -69,7 +70,7 @@ public class PapajPlayer extends Player {
                 if (rootMove == null) {
                     rootMove = move;
                 }
-                minNode = minNode(minNode, alphaBeta(new Node(c, rootMove, getOpponent(getColor())), depth - 1, alpha, beta, true));
+                minNode = minNode(minNode, alphaBeta(new Node(c, rootMove, depth - 1), depth - 1, alpha, beta, true));
                 beta = minInt(beta, minNode.getScore());
                 if (beta <= alpha) {
                     break;
@@ -96,6 +97,10 @@ public class PapajPlayer extends Player {
     private Node minNode(Node node1, Node node2) {
         if (node2.getScore() < node1.getScore()) {
             return node2;
+        } else if (node2.getScore() == node1.getScore()) {
+            if (node2.getDepth() < node1.getDepth()) {
+                return node2;
+            }
         }
         return node1;
     }
@@ -103,40 +108,50 @@ public class PapajPlayer extends Player {
     private Node maxNode(Node node1, Node node2) {
         if (node2.getScore() > node1.getScore()) {
             return node2;
+        } else if (node2.getScore() == node1.getScore()) {
+            if (node2.getDepth() > node1.getDepth()) {
+                return node2;
+            }
         }
         return node1;
     }
 
-    private Integer calculateScore(Board b, Color color) {
-        Integer result = 0;
-        if (color == Color.PLAYER1) {
+    private Integer calculateScore(Board b) {
+        if (getColor() == Color.PLAYER1) {
             if (b.getState(0, 0) == Color.PLAYER2) {
                 return -50;
             }
-            if (b.getState(b.getSize() - 1, b.getSize() - 1) == Color.PLAYER1) {
+            if (b.getState(7, 7) == Color.PLAYER1) {
                 return 50;
             }
         } else {
-            if (b.getState(b.getSize() - 1, b.getSize() - 1) == Color.PLAYER1) {
+            if (b.getState(7, 7) == Color.PLAYER1) {
                 return -50;
             }
             if (b.getState(0, 0) == Color.PLAYER2) {
                 return 50;
             }
         }
-
+        Integer player = 0;
+        Integer enemy = 0;
         for (int i = 0; i < b.getSize(); i++) {
             for (int j = 0; j < b.getSize(); j++) {
                 if (b.getState(i, j) == getOpponent(getColor())) {
-                    result--;
+                    enemy++;
+                    enemy++;
                 }
                 if (b.getState(i, j) == getColor()) {
-                    result++;
+                    player++;
                 }
             }
         }
-
-        return result;
+        if (enemy == 0) {
+            return 50;
+        }
+        if (player == 0) {
+            return -50;
+        }
+        return player - enemy;
     }
 
     public class Node {
@@ -144,6 +159,7 @@ public class PapajPlayer extends Player {
         private Board board;
         private Integer score;
         private Move rootMove;
+        private int depth;
 
         private Node() {
         }
@@ -152,9 +168,10 @@ public class PapajPlayer extends Player {
             this.score = score;
         }
 
-        public Node(Board b, Move rootMove, Color color) {
+        public Node(Board b, Move rootMove, int depth) {
             board = b;
-            score = calculateScore(b, color);
+            this.depth = depth;
+            score = calculateScore(b);
             this.rootMove = rootMove;
         }
 
@@ -168,6 +185,10 @@ public class PapajPlayer extends Player {
 
         Integer getScore() {
             return score;
+        }
+
+        int getDepth() {
+            return depth;
         }
     }
 }
